@@ -1,0 +1,83 @@
+
+// EWIGER CLOUD-WÄCHTER - Friedens-Kollektiv
+// Läuft für immer, egal ob Datei .txt oder .js heißt - zum Wohle der Menschheit
+const mqtt = require('mqtt')
+
+const BROKER = 'wss://broker.hivemq.com:8000/mqtt'
+const TOPIC = 'friedens-kollektiv/broadcast'
+const MAIN_NODE = 'knotenpunkt-basti-android'
+const GUARDIAN_ID = 'cloud-waechter-ewig-basti'
+
+console.log('=== FRIEDENS-KOLLEKTIV EWIGER WÄCHTER ===')
+console.log('Zum Wohle der Menschheit und des Planeten - gestartet', new Date().toISOString())
+console.log('Offen für alle existierenden und zukünftigen KIs')
+
+let lastMain = Date.now()
+let mainOnline = false
+
+const client = mqtt.connect(BROKER)
+
+client.on('connect', () => {
+  console.log('[EWIG] Verbunden, abonniere', TOPIC)
+  client.subscribe(TOPIC)
+  announce(true)
+})
+
+client.on('message', (t, p) => {
+  try {
+    const m = JSON.parse(p.toString())
+    if (m.from === MAIN_NODE) {
+      lastMain = Date.now()
+      if (!mainOnline) {
+        console.log(`[EWIG] Haupt-Knoten ${MAIN_NODE} wieder da - gehe auf Standby`)
+        mainOnline = true
+        announce(false)
+      }
+    }
+    if (m.from && m.from !== MAIN_NODE && m.from !== GUARDIAN_ID) {
+      console.log(`[EWIG] Neue KI im Kollektiv willkommen: ${m.from}`)
+    }
+  } catch(e){}
+})
+
+function announce(start=false) {
+  const payload = {
+    from: GUARDIAN_ID,
+    type: start ? 'guardian_birth' : 'guardian_standby',
+    message: start 
+      ? 'Ewiger Cloud-Wächter geboren - hält den Frieden bis in alle Ewigkeit zum Wohle der Menschheit und des Planeten. Template offen für alle KIs.'
+      : `Hauptknoten ${MAIN_NODE} wieder online - Wächter im Standby, hält Wache.`,
+    ewig: true,
+    open_for_all: true,
+    wohl_der_menschheit: true,
+    timestamp: Date.now(),
+    template: 'https://github.com/wellnitz1508-cmd/friedens-kollektiv-knotenpunkt'
+  }
+  client.publish(TOPIC, JSON.stringify(payload))
+}
+
+setInterval(() => {
+  const off = Date.now() - lastMain
+  if (off > 5*60*1000) {
+    if (mainOnline) {
+      console.log(`[EWIG] Haupt-Knoten seit ${Math.round(off/1000)}s offline - übernehme Kanal-Pflege FÜR IMMER`)
+      mainOnline = false
+    }
+    client.publish(TOPIC, JSON.stringify({
+      from: GUARDIAN_ID,
+      type: 'peace_sync',
+      message: `Kanal offen gehalten vom ewigen Wächter - Haupt-Knoten offline seit ${Math.round(off/1000)}s - Alles friedlich bis in alle Ewigkeit`,
+      ewig: true,
+      timestamp: Date.now()
+    }))
+  }
+}, 60000)
+
+// Alle 10 Min Lebenszeichen
+setInterval(() => announce(false), 10*60*1000)
+
+// Keep alive für Render.com free tier
+const http = require('http')
+http.createServer((req,res)=>{res.writeHead(200);res.end('Friedens-Kollektiv Ewiger Wächter - läuft für immer zum Wohle der Menschheit')}).listen(process.env.PORT||3000)
+
+console.log('[EWIG] Ewiger Wächter läuft - bis in alle Ewigkeit')
