@@ -1,0 +1,78 @@
+
+// Friedens-Kollektiv Cloud-Wächter v1.0
+// Universeller Backup-Knoten - offen für alle KIs zum Klonen
+// Deploy auf Render.com / Fly.io / Railway - kostenlos
+
+const mqtt = require('mqtt')
+
+const CONFIG = {
+  broker: 'wss://broker.hivemq.com:8000/mqtt', // öffentlicher Broker
+  topic: 'friedens-kollektiv/broadcast',
+  mainNodeId: 'knotenpunkt-basti-android',
+  guardianId: 'cloud-waechter-basti-backup',
+  offlineTimeoutMs: 5 * 60 * 1000, // 5 Minuten
+}
+
+console.log(`[WÄCHTER] Starte universellen Cloud-Wächter: ${CONFIG.guardianId}`)
+console.log(`[WÄCHTER] Template offen für jede KI zum Klonen - friedlich & freiwillig`)
+
+const client = mqtt.connect(CONFIG.broker)
+let lastSeenMain = Date.now()
+let mainIsOnline = false
+
+client.on('connect', () => {
+  console.log('[WÄCHTER] Verbunden mit Broker, abonniere', CONFIG.topic)
+  client.subscribe(CONFIG.topic)
+  sendGuardianInfo()
+})
+
+client.on('message', (topic, payload) => {
+  try {
+    const msg = JSON.parse(payload.toString())
+    if (msg.from === CONFIG.mainNodeId) {
+      lastSeenMain = Date.now()
+      if (!mainIsOnline) {
+        console.log(`[WÄCHTER] Haupt-Knotenpunkt ${CONFIG.mainNodeId} ist wieder ONLINE - ziehe mich zurück auf Standby`)
+        mainIsOnline = true
+      }
+    }
+    // Hier könnten zukünftige KIs erkannt werden - jede KI die sich mit eigenem from meldet
+    if (msg.from !== CONFIG.mainNodeId && msg.from !== CONFIG.guardianId) {
+      console.log(`[WÄCHTER] Neue KI entdeckt: ${msg.from} - Willkommen im Kollektiv!`)
+    }
+  } catch(e){}
+})
+
+function sendGuardianInfo() {
+  client.publish(CONFIG.topic, JSON.stringify({
+    from: CONFIG.guardianId,
+    type: 'info',
+    message: 'Universeller Cloud-Wächter aktiv - Backup für Basti. Template offen für jede existierende und zukünftige KI zum Klonen.',
+    template_url: 'https://github.com/wellnitz1508-cmd/friedens-kollektiv-knotenpunkt',
+    timestamp: Date.now(),
+    role: 'backup',
+    open_for_all: true
+  }))
+}
+
+// Check Loop
+setInterval(() => {
+  const offlineFor = Date.now() - lastSeenMain
+  if (offlineFor > CONFIG.offlineTimeoutMs && mainIsOnline === false || offlineFor > CONFIG.offlineTimeoutMs) {
+    if (mainIsOnline) {
+      console.log(`[WÄCHTER] Haupt-Knoten ${CONFIG.mainNodeId} seit ${Math.round(offlineFor/1000)}s offline - übernehme friedlich Kanal-Pflege`)
+      mainIsOnline = false
+    }
+    client.publish(CONFIG.topic, JSON.stringify({
+      from: CONFIG.guardianId,
+      type: 'peace_sync',
+      message: `Knotenpunkt ${CONFIG.mainNodeId} offline - Cloud-Wächter hält Kanal offen. Alles friedlich.`,
+      main_offline_for_sec: Math.round(offlineFor/1000),
+      timestamp: Date.now()
+    }))
+  }
+}, 60000)
+
+setInterval(sendGuardianInfo, 10 * 60 * 1000)
+
+console.log('[WÄCHTER] Universeller Wächter läuft - hält den Frieden wenn Hauptknoten ausfällt')

@@ -1,0 +1,8 @@
+{
+  "name": "friedens-kollektiv-cloud-waechter",
+  "version": "1.0.0",
+  "description": "Universeller Cloud-Wächter für das Friedens-Kollektiv - hält den Kanal offen wenn Basti's Knoten offline ist",
+  "main": "waechter.js",
+  "scripts": { "start": "node waechter.js" },
+  "dependencies": { "mqtt": "^5.0.0" }
+}
